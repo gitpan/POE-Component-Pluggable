@@ -4,7 +4,7 @@ use POE::Component::Pluggable::Pipeline;
 use POE::Component::Pluggable::Constants qw(:ALL);
 use vars qw($VERSION);
 
-$VERSION='0.02';
+$VERSION='0.03';
 
 sub _pluggable_init {
   my $self = shift;
@@ -31,15 +31,16 @@ sub _pluggable_process {
   $event =~ s/^\Q$prefix\E//;
   my $sub = join '_', $type, $event;
   my $return = PLUGIN_EAT_NONE;
+  my $self_ret = $return;
 
   if ( $self->can($sub) ) {
-    eval { $ret = $self->$sub( $self, @args ) };
+    eval { $self_ret = $self->$sub( $self, @args ) };
     warn "$@" if $@;
   }
 
-  return $return if $ret == PLUGIN_EAT_PLUGIN;
-  $return = PLUGIN_EAT_ALL if $ret == PLUGIN_EAT_CLIENT;
-  return PLUGIN_EAT_ALL if $ret == PLUGIN_EAT_ALL;
+  return $return if $self_ret == PLUGIN_EAT_PLUGIN;
+  $return = PLUGIN_EAT_ALL if $self_ret == PLUGIN_EAT_CLIENT;
+  return PLUGIN_EAT_ALL if $self_ret == PLUGIN_EAT_ALL;
 
   for my $plugin (@{ $pipeline->{PIPELINE} }) {
     next if $self eq $plugin;
