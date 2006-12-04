@@ -1,5 +1,9 @@
 POE::Component::Pluggable
 =========================
 
+0.02	Mon Dec 04 18:27:05 GMT 2006
+	- The return value of component plugin event handlers now affect subsequent
+	processing of events.
+
 0.01	Wed Nov 29 12:01:34 GMT 2006
 	- Initial CPAN release.

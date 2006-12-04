@@ -10,4 +10,4 @@ no_index:
 requires: 
   Carp: 0
   POE: 0.38
-version: 0.01
+version: 0.02
