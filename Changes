@@ -1,6 +1,9 @@
 POE::Component::Pluggable
 =========================
 
+0.04	Wed Dec 06 07:37:37 GMT 2006
+	- strict was missing from pluggable. Doh. Kwalitee failure.
+
 0.03	Mon Dec 04 19:01:34 GMT 2006
 	- Classic school-boy error. Poco event handlers were clobbering all 
 	events.

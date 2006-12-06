@@ -1,10 +1,11 @@
 package POE::Component::Pluggable;
 
+use strict;
 use POE::Component::Pluggable::Pipeline;
 use POE::Component::Pluggable::Constants qw(:ALL);
 use vars qw($VERSION);
 
-$VERSION='0.03';
+$VERSION='0.04';
 
 sub _pluggable_init {
   my $self = shift;
