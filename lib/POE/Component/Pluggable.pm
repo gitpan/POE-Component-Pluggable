@@ -5,7 +5,7 @@ use POE::Component::Pluggable::Pipeline;
 use POE::Component::Pluggable::Constants qw(:ALL);
 use vars qw($VERSION);
 
-$VERSION='0.05';
+$VERSION='0.06';
 
 sub _pluggable_init {
   my $self = shift;
@@ -209,7 +209,7 @@ __END__
 
 =head1 NAME
 
-POE::Component::Pluggable - a base class for creating plugin enabled POE Components.
+POE::Component::Pluggable - A base class for creating plugin enabled POE Components.
 
 =head1 SYNOPSIS
 
