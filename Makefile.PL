@@ -5,6 +5,7 @@ license 'perl';
 version_from 'lib/POE/Component/Pluggable.pm';
 abstract_from 'lib/POE/Component/Pluggable.pm';
 build_requires 'Test::More' => 0.47;
+requires 'warnings' => 0;
 requires 'Carp' => 0;
 requires 'POE' => 0.38;
 WriteAll();

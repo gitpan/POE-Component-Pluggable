@@ -3,7 +3,7 @@ package POE::Component::Pluggable::Pipeline;
 use strict;
 use warnings;
 
-our $VERSION = '0.01';
+our $VERSION = '1.00';
 
 
 sub new {

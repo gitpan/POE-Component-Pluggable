@@ -3,7 +3,7 @@ package POE::Component::Pluggable::Constants;
 use strict;
 use vars qw($VERSION);
 
-$VERSION = '0.01';
+$VERSION = '1.00';
 
 require Exporter;
 our @ISA = qw( Exporter );

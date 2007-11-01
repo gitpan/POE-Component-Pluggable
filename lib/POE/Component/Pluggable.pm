@@ -5,7 +5,7 @@ use POE::Component::Pluggable::Pipeline;
 use POE::Component::Pluggable::Constants qw(:ALL);
 use vars qw($VERSION);
 
-$VERSION='0.06';
+$VERSION='1.00';
 
 sub _pluggable_init {
   my $self = shift;
