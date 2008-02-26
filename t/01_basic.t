@@ -1,8 +1,11 @@
+use strict;
+use warnings;
 use Test::More tests => 7;
 
 {
   package TestSubClass;
   use strict;
+  use warnings;
   use base qw(POE::Component::Pluggable);
   use POE::Component::Pluggable::Constants qw(:ALL);
   use POE;
@@ -67,6 +70,7 @@ use Test::More tests => 7;
 {
   package TestPlugin;
   use strict;
+  use warnings;
   use Test::More;
   use POE::Component::Pluggable::Constants qw(:ALL);
 
@@ -94,6 +98,8 @@ use Test::More tests => 7;
   }
 }
 
+use strict;
+use warnings;
 use POE;
 
 POE::Session->create(

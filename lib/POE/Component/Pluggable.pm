@@ -1,11 +1,12 @@
 package POE::Component::Pluggable;
 
 use strict;
+use warnings;
 use POE::Component::Pluggable::Pipeline;
 use POE::Component::Pluggable::Constants qw(:ALL);
 use vars qw($VERSION);
 
-$VERSION='1.00';
+$VERSION='1.02';
 
 sub _pluggable_init {
   my $self = shift;
@@ -346,7 +347,7 @@ POE::Component::Pluggable - A base class for creating plugin enabled POE Compone
 =head1 DESCRIPTION
 
 POE::Component::Pluggable is a base class for creating plugin enabled POE Components. It is a
-generic port of L<POE::Component::IRC>s plugin system.
+generic port of L<POE::Component::IRC>'s plugin system.
 
 If your component dispatches events to registered POE sessions then POE::Component::Pluggable may
 be a good fit for you.

@@ -1,14 +1,15 @@
 package POE::Component::Pluggable::Constants;
 
+require Exporter;
+@ISA = qw( Exporter );
+%EXPORT_TAGS = ( 'ALL' => [ qw( PLUGIN_EAT_NONE PLUGIN_EAT_CLIENT PLUGIN_EAT_PLUGIN PLUGIN_EAT_ALL ) ] );
+Exporter::export_ok_tags( 'ALL' );
+
 use strict;
+use warnings;
 use vars qw($VERSION);
 
-$VERSION = '1.00';
-
-require Exporter;
-our @ISA = qw( Exporter );
-our %EXPORT_TAGS = ( 'ALL' => [ qw( PLUGIN_EAT_NONE PLUGIN_EAT_CLIENT PLUGIN_EAT_PLUGIN PLUGIN_EAT_ALL ) ] );
-Exporter::export_ok_tags( 'ALL' );
+$VERSION = '1.02';
 
 # Our constants
 sub PLUGIN_EAT_NONE	() { 1 }

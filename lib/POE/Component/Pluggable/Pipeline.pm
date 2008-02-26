@@ -2,9 +2,9 @@ package POE::Component::Pluggable::Pipeline;
 
 use strict;
 use warnings;
+use vars qw($VERSION);
 
-our $VERSION = '1.00';
-
+$VERSION = '1.02';
 
 sub new {
   my ($class, $irc) = @_;
