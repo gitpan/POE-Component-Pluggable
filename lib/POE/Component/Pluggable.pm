@@ -6,7 +6,7 @@ use POE::Component::Pluggable::Pipeline;
 use POE::Component::Pluggable::Constants qw(:ALL);
 use vars qw($VERSION);
 
-$VERSION='1.02';
+$VERSION='1.04';
 
 sub _pluggable_init {
   my $self = shift;
@@ -569,6 +569,12 @@ Better documentation >:]
 =head1 AUTHOR
 
 Chris 'BinGOs' Williams <chris@bingosnet.co.uk>
+
+=head1 LICENSE
+
+Copyright C<(c)> Chris Williams, Apocalypse and Jeff Pinyan
+
+This module may be used, modified, and distributed under the same terms as Perl itself. Please see the license that came with your Perl distribution for details.
 
 =head1 KUDOS
 

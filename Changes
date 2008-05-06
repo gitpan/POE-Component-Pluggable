@@ -1,6 +1,9 @@
 POE::Component::Pluggable
 =========================
 
+1.04	Tue May  6 11:55:54 BST 2008
+	- Removed kwalitee test and added license information
+
 1.02	Tue Feb 26 13:12:36 GMT 2008
 	- Some Kwalitee fixes and doc tweaks.
 
