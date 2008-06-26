@@ -21,4 +21,4 @@ requires:
   Carp: 0
   POE: 1.0002
   perl: 5.000
-version: 1.08
+version: 1.10
