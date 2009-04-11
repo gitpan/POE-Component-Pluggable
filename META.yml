@@ -1,11 +1,13 @@
 ---
-abstract: 'A base class for creating plugin enabled POE Components.'
+abstract: 'A base class for creating plugin-enabled POE Components.'
 author:
   - 'Chris Williams <chris@bingosnet.co.uk>'
 build_requires:
   Test::More: 0.47
+configure_requires:
+  ExtUtils::MakeMaker: 6.50
 distribution_type: module
-generated_by: 'Module::Install version 0.79'
+generated_by: 'Module::Install version 0.81'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
@@ -17,8 +19,9 @@ no_index:
     - inc
     - t
 requires:
-  POE: 1.0002
+  POE: 1.004
   perl: 5.6.0
 resources:
   license: http://dev.perl.org/licenses/
-version: 1.16
+  repository: git://github.com/bingos/poe-component-pluggable.git
+version: 1.18
