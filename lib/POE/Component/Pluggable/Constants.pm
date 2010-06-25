@@ -2,7 +2,7 @@ package POE::Component::Pluggable::Constants;
 
 use strict;
 use warnings;
-our $VERSION = '1.24';
+our $VERSION = '1.26';
 
 require Exporter;
 use base qw(Exporter);
@@ -20,6 +20,8 @@ use constant {
 
 1;
 __END__
+
+=encoding utf8
 
 =head1 NAME
 

@@ -6,7 +6,7 @@ use Carp;
 use POE::Component::Pluggable::Pipeline;
 use POE::Component::Pluggable::Constants qw(:ALL);
 
-our $VERSION='1.24';
+our $VERSION='1.26';
 
 sub _pluggable_init {
     my ($self, %opts) = @_;
@@ -19,7 +19,7 @@ sub _pluggable_init {
         $self->{_pluggable_types} = { map { $_ => $_ } @{ $self->{_pluggable_types} } };
     }
     elsif (ref $self->{_pluggable_types} ne 'HASH') {
-        $self->{_pluggable_types} = {};
+        croak "Argument 'types' must be supplied";
     }
   
     return 1;
@@ -39,7 +39,7 @@ sub _pluggable_process {
     my ($self, $type, $event, @args) = @_;
 
     if (!defined $type || !defined $event) {
-        carp 'Please supply an event type and name';
+        carp 'Please supply an event type and name!';
         return;
     }
 
@@ -53,11 +53,11 @@ sub _pluggable_process {
 
     if ($self->can($sub)) {
         eval { $self_ret = $self->$sub( $self, @args ) };
-        $self->_handle_error($sub, $self_ret);
+        $self->_handle_error($self, $sub, $self_ret);
     }
     elsif ( $self->can('_default') ) {
         eval { $self_ret = $self->_default( $self, $sub, @args ) };
-        $self->_handle_error('_default', $self_ret);
+        $self->_handle_error($self, '_default', $self_ret);
     }
 
     return $return if $self_ret == PLUGIN_EAT_PLUGIN;
@@ -76,11 +76,11 @@ sub _pluggable_process {
         my $alias = ($pipeline->get($plugin))[1];
         if ($plugin->can($sub)) {
             eval { $ret = $plugin->$sub($self,@args) };
-            $self->_handle_error($sub, $ret, $alias);
+            $self->_handle_error($plugin, $sub, $ret, $alias);
         }
         elsif ( $plugin->can('_default') ) {
             eval { $ret = $plugin->_default($self,$sub,@args) };
-            $self->_handle_error('_default', $ret, $alias);
+            $self->_handle_error($plugin, '_default', $ret, $alias);
         }
 
 	$ret = PLUGIN_EAT_NONE unless defined $ret;
@@ -93,19 +93,31 @@ sub _pluggable_process {
 }
 
 sub _handle_error {
-    my ($self, $sub, $return, $source) = @_;
+    my ($self, $object, $sub, $return, $source) = @_;
     $source = defined $source ? "plugin '$source'" : 'self';
 
     if ($@) {
         chomp $@;
-        warn "$sub call on $source failed: $@\n" if $self->{_pluggable_debug};
+        my $error = "$sub call on $source failed: $@";
+        warn "$error\n" if $self->{_pluggable_debug};
+
+        $self->_pluggable_event(
+            "$self->{_pluggable_prefix}plugin_error",
+            $error, ($object == $self ? ($object, $source) : ()),
+        );
     }
     elsif ( !defined $return || 
       ($return != PLUGIN_EAT_NONE
       && $return != PLUGIN_EAT_PLUGIN
       && $return != PLUGIN_EAT_CLIENT
       && $return != PLUGIN_EAT_ALL) ) {
-        warn "$sub call on $source did not return a valid EAT constant\n";
+        my $error = "$sub call on $source did not return a valid EAT constant";
+        warn "$error\n" if $self->{_pluggable_debug};
+
+        $self->_pluggable_event(
+            "$self->{_pluggable_prefix}plugin_error",
+            $error, ($object == $self ? ($object, $source) : ()),
+        );
     }
 
     return;
@@ -141,7 +153,6 @@ sub plugin_del {
     }
 
     my $return = scalar $self->pipeline->remove($name);
-    warn "$@\n" if $@;
     return $return;
 }
 
@@ -177,12 +188,12 @@ sub plugin_register {
     my $pipeline = $self->pipeline;
 
     if (!grep { $_ eq $type } keys %{ $self->{_pluggable_types} }) {
-        carp "The type '$type' is not supported!";
+        carp "The event type '$type' is not supported!";
         return;
     }
 
     if (!defined $plugin) {
-        carp 'Please supply the plugin object to register!';
+        carp 'Please supply the plugin object to register events for!';
         return;
     }
 
@@ -208,7 +219,7 @@ sub plugin_unregister {
     my $pipeline = $self->pipeline;
 
     if (!grep { $_ eq $type } keys %{ $self->{_pluggable_types} }) {
-        carp "The type '$type' is not supported!";
+        carp "The event type '$type' is not supported!";
         return;
     }
 
@@ -246,6 +257,8 @@ sub plugin_unregister {
 1;
 __END__
 
+=encoding utf8
+
 =head1 NAME
 
 POE::Component::Pluggable - A base class for creating plugin-enabled POE Components.
@@ -253,145 +266,184 @@ POE::Component::Pluggable - A base class for creating plugin-enabled POE Compone
 =head1 SYNOPSIS
 
  # A simple POE Component that sends ping events to registered sessions
- # every 30 seconds. A rather convoluted example to be honest.
+ # and plugins every second.
 
  {
      package SimplePoCo;
-  
+
      use strict;
+     use warnings;
      use base qw(POE::Component::Pluggable);
      use POE;
      use POE::Component::Pluggable::Constants qw(:ALL);
-  
+
      sub spawn {
          my ($package, %opts) = @_;
-         $opts{lc $_} = delete $opts{$_} for keys %opts;
          my $self = bless \%opts, $package;
-         
-         $self->_pluggable_init(prefix => 'simplepoco_');
+
+         $self->_pluggable_init(
+             prefix => 'simplepoco_',
+             types  => [qw(EXAMPLE)],
+             debug  => 1,
+         );
+
          POE::Session->create(
              object_states => [
                  $self => { shutdown => '_shutdown' },
                  $self => [qw(_send_ping _start register unregister __send_event)],
              ],
-             heap => $self,
          );
-         
+
          return $self;
      }
-  
+
      sub shutdown {
          my ($self) = @_;
          $poe_kernel->post($self->{session_id}, 'shutdown');
      }
-  
+
      sub _pluggable_event {
          my ($self) = @_;
          $poe_kernel->post($self->{session_id}, '__send_event', @_);
      }
-  
+
      sub _start {
-         my ($kernel,$self) = @_[KERNEL,OBJECT];
+         my ($kernel, $self) = @_[KERNEL, OBJECT];
          $self->{session_id} = $_[SESSION]->ID();
-         
+
          if ($self->{alias}) {
              $kernel->alias_set($self->{alias});
          }
          else {
              $kernel->refcount_increment($self->{session_id}, __PACKAGE__);
          }
-      
+
          $kernel->delay(_send_ping => $self->{time} || 300);
          return;
      }
-  
+
      sub _shutdown {
           my ($kernel, $self) = @_[KERNEL, OBJECT];
+
           $self->_pluggable_destroy();
           $kernel->alarm_remove_all();
-          $self->alias_remove($_) for $kernel->alias_list();
+          $kernel->alias_remove($_) for $kernel->alias_list();
           $kernel->refcount_decrement($self->{session_id}, __PACKAGE__) if !$self->{alias};
           $kernel->refcount_decrement($_, __PACKAGE__) for keys %{ $self->{sessions} };
-         
+
           return;
      }
-  
+
      sub register {
          my ($kernel, $sender, $self) = @_[KERNEL, SENDER, OBJECT];
          my $sender_id = $sender->ID();
          $self->{sessions}->{$sender_id}++;
-         
+
          if ($self->{sessions}->{$sender_id} == 1) { 
              $kernel->refcount_increment($sender_id, __PACKAGE__);
-             $kernel->yield(__send_event => $self->{_pluggable_prefix} . 'registered', $sender_id);
+             $kernel->yield(__send_event => 'simplepoco_registered', $sender_id);
          }
-         
+
          return;
      }
-  
+
      sub unregister {
          my ($kernel, $sender, $self) = @_[KERNEL, SENDER, OBJECT];
          my $sender_id = $sender->ID();
          my $record = delete $self->{sessions}->{$sender_id};
-         
+
          if ($record) {
              $kernel->refcount_decrement($sender_id, __PACKAGE__);
-             $kernel->yield(__send_event => $self->{_pluggable_prefix} . 'unregistered', $sender_id);
+             $kernel->yield(__send_event => 'simplepoco_unregistered', $sender_id);
          }
-         
+
          return;
      }
   
      sub __send_event {
          my ($kernel, $self, $event, @args) = @_[KERNEL, OBJECT, ARG0..$#_];
-  
-         return 1 if $self->_pluggable_process(PING => $event, \(@args)) == PLUGIN_EAT_ALL;
-  
+
+         return 1 if $self->_pluggable_process(EXAMPLE => $event, \(@args)) == PLUGIN_EAT_ALL;
          $kernel->post($_, $event, @args) for keys %{ $self->{sessions} };
      }
-  
+
      sub _send_ping {
          my ($kernel, $self) = @_[KERNEL, OBJECT];
-         my $event = $self->{_pluggable_prefix} . 'ping';
-         my @args = ('Wake up sleepy');
-         $kernel->yield(__send_event => $event, @args);
-         $kernel->delay(_send_ping => $self->{time} || 300);
-         
+
+         $kernel->yield(__send_event => 'simplepoco_ping', 'Wake up sleepy');
+         $kernel->delay(_send_ping => $self->{time} || 1);
          return;
      }
- }       
-  
-     use POE;
-  
-     my $pluggable = SimplePoCo->spawn(
-         alias => 'pluggable',
-         time => 30,
-     );
-  
-     POE::Session->create(
-         package_states => [
-             main => [qw(_start simplepoco_registered simplepoco_ping)],
-         ],
-     );
-  
-     $poe_kernel->run();
-  
-     sub _start {
-         my ($kernel, $heap) = @_[KERNEL, HEAP];
-         $kernel->post(pluggable => 'register');
-         return;
+ }
+
+ {
+     package SimplePoCo::Plugin;
+     use strict;
+     use warnings;
+     use POE::Component::Pluggable::Constants qw(:ALL);
+
+     sub new {
+         my $package = shift;
+         return bless { @_ }, $package;
      }
-  
-     sub simplepoco_registered {
-         print "Yay, we registered\n";
-         return;
+
+     sub plugin_register {
+         my ($self, $pluggable) = splice @_, 0, 2;
+         print "Plugin added\n";
+         $pluggable->plugin_register($self, 'EXAMPLE', 'all');
+         return 1;
      }
-  
-     sub simplepoco_ping {
-         my ($sender, $text) = @_[SENDER, ARG0];
-         print "Got '$text' from ", $sender->ID, "\n";
-         return;
+
+     sub plugin_unregister {
+         print "Plugin removed\n";
+         return 1;
      }
+
+     sub EXAMPLE_ping {
+         my ($self, $pluggable) = splice @_, 0, 2;
+         my $text = ${ $_[0] };
+         print "Plugin got '$text'\n";
+         return PLUGIN_EAT_NONE;
+     }
+ }
+
+ use strict;
+ use warnings;
+ use POE;
+
+ my $pluggable = SimplePoCo->spawn(
+     alias => 'pluggable',
+     time  => 1,
+ );
+
+ POE::Session->create(
+     package_states => [
+         main => [qw(_start simplepoco_registered simplepoco_ping)],
+     ],
+ );
+
+ $poe_kernel->run();
+
+ sub _start {
+     my $kernel = $_[KERNEL];
+     $kernel->post(pluggable => 'register');
+     return;
+ }
+
+ sub simplepoco_registered {
+     print "Main program registered for events\n";
+     my $plugin = SimplePoCo::Plugin->new();
+     $pluggable->plugin_add('TestPlugin', $plugin);
+     return;
+ }
+
+ sub simplepoco_ping {
+     my ($heap, $text) = @_[HEAP, ARG0];
+     print "Main program got '$text'\n";
+     $heap->{got_ping}++;
+     $pluggable->shutdown() if $heap->{got_ping} == 3;
+     return;
+ }
 
 =head1 DESCRIPTION
 
@@ -424,12 +476,16 @@ methods:
 This should be called on your object after initialisation, but before you want
 to start processing plugins. It accepts a number of argument/value pairs:
 
+ 'types', an arrayref of the types of events that your poco will support,
+          OR a hashref with the event types as keys and their abbrevations
+          (used as plugin event method prefixes) as values. This argument is
+          mandatory.
+
  'prefix', the prefix for your events (default: 'pluggable_');
  'reg_prefix', the prefix for the register()/unregister() plugin methods 
                (default: 'plugin_');
- 'types', an arrayref of the types of events that your poco will support,
-          OR a hashref with the event types as keys and their abbrevations
-          (used as plugin event method prefixes) as values;
+ 'debug', a boolean, if true, will cause a warning to be printed every time a
+          plugin call fails.
 
 Notes: 'prefix' should probably end with a '_'. The types specify the prefixes
 for plugin handlers. You can specify as many different types as you require. 
@@ -462,6 +518,9 @@ plugin system. This enables plugins to mangle the arguments if necessary.
 This method should be overridden in your class so that pipeline can dispatch
 events through your event dispatcher. Pipeline sends a prefixed 'plugin_add'
 and 'plugin_del' event whenever plugins are added or removed, respectively.
+A prefixed 'plugin_error' event will be sent if a plugin a) raises an
+exception, b) fails to return a true value from its register/unregister
+methods, or c) fails to return a valid EAT constant from a handler.
 
  sub _pluggable_event {
      my $self = shift;
@@ -477,7 +536,7 @@ methods:
 
 =head2 C<pipeline>
 
-Returns the L<POE::Component::Pluggable::Pipeline|POE::Component:::Pluggable::Pipeline>
+Returns the L<POE::Component::Pluggable::Pipeline|POE::Component::Pluggable::Pipeline>
 object.
 
 =head2 C<plugin_add>
